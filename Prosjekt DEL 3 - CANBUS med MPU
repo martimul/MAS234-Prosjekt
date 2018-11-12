@@ -1,14 +1,14 @@
 #include <FlexCAN.h>
 #include <util/delay.h>
 #include <Wire.h>
-//#define MPU6050_AFS_SEL_2G  MPU6050_AFS_SEL_0
+#include <Metro.h>
+#define MPU6050_AFS_SEL_2G  MPU6050_AFS_SEL_0
 
 static CAN_message_t msg;
 static uint8_t hex[17] = "0123456789abcdef";
-
 int LED = 13;
 bool paa = 1;
-
+Metro serialMetro = Metro(1000);
 const int MPU_addr = 0x68;
 int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ;
 
@@ -17,7 +17,6 @@ double y;
 double z;
 int minVal=265;
 int maxVal=402;
-
 
 #ifndef __MK66FX1M0__
   #error "Teensy 3.6 with dual CAN bus is required to run this example"
@@ -82,34 +81,28 @@ void setup(void)
 void loop(void)
 {
 
-//MPU loop som leser MPU-verdier 
+//------------------------------------------------------------------------------------------------------
+// MPU loop som leser MPU-verdier 
    
   Wire.beginTransmission(MPU_addr);
-  Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
+  Wire.write(0x3B);                    // starting with register 0x3B (ACCEL_XOUT_H)
   Wire.endTransmission(false);
   Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
-
-  AcX=((Wire.read()<<8|Wire.read())/(16384));
-  GyX=((Wire.read()<<8|Wire.read())/17);  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
-  AcY=((Wire.read()<<8|Wire.read())/(16384));
-  AcZ=((Wire.read()<<8|Wire.read())/(16384));
+ 
+  AcX=Wire.read()<<8|Wire.read();
+  AcY=Wire.read()<<8|Wire.read();
+  AcZ=Wire.read()<<8|Wire.read();
   
   int xAng = map(AcX,minVal,maxVal,-90,90);
   int yAng = map(AcY,minVal,maxVal,-90,90);
   int zAng = map(AcZ,minVal,maxVal,-90,90);
 
-  
-  //Serial.print(" | GyX = "); Serial.print(x);
-     Serial.print("AngleX= ");
-     Serial.println(AcX);
+  x = RAD_TO_DEG * (atan2(-yAng, -zAng)+PI);
+  y = RAD_TO_DEG * (atan2(-xAng, -zAng)+PI);
+  z = RAD_TO_DEG * (atan2(-yAng, -xAng)+PI);
 
-     Serial.print("AngleY= ");
-     Serial.println(AcY);
 
-     Serial.print("AngleZ= ");
-     Serial.println(AcZ);
-     Serial.println("-----------------------------------------");       
-
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------
   
   while (Can0.available()) 
   {
@@ -132,5 +125,18 @@ void loop(void)
     }
    }
 
-}                   
-        
+
+//---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// Skriver imu data til bit 0 1 2 via CANBUS. Oppdateringsfrekvensen blir 1 oppdatering i sekundet da T = 1/f og f=1 HZ så da blir T = 1.
+
+    if (serialMetro.check() == 1) // check if the metro has passed it's interval .
+    { 
+      msg.buf[0] = x; // henter x y z verdier fra imu
+      msg.buf[1] = y;
+      msg.buf[2] = z;
+      Can0.write(msg); // skriver til can0
+   }
+
+   
+}   
