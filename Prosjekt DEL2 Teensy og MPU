@@ -1,0 +1,66 @@
+#include <util/delay.h>
+#include <Wire.h>
+#define MPU6050_AFS_SEL_2G  MPU6050_AFS_SEL_0
+
+const int MPU_addr=0x68;
+int16_t AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ;
+
+const int ledPin = 13;
+double x;
+double y;
+double z;
+int minVal=265;
+int maxVal=402;
+
+void setup()   {                
+Wire.begin();
+Wire.beginTransmission(MPU_addr);
+Wire.write(00000000);
+pinMode(2, OUTPUT);
+  Serial.begin(9600);
+  Wire.beginTransmission(MPU_addr);
+  Wire.write(0x6B);
+  Wire.write(0);
+  Wire.endTransmission(true);
+  pinMode(ledPin, OUTPUT);
+}
+
+void loop()                     
+{
+  Wire.beginTransmission(MPU_addr);
+  Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
+  Wire.endTransmission(false);
+  Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
+ 
+  AcX=((Wire.read()<<8|Wire.read())/(16384));
+  //GyX=((Wire.read()<<8|Wire.read())/17);  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
+//  AcY=Wire.read()<<8|Wire.read())/(16384));
+//  AcZ=Wire.read()<<8|Wire.read())/(16384));
+  
+  int xAng = map(AcX,minVal,maxVal,-90,90);
+  int yAng = map(AcY,minVal,maxVal,-90,90);
+  int zAng = map(AcZ,minVal,maxVal,-90,90);
+
+  
+  //Serial.print(" | GyX = "); Serial.print(x);
+     Serial.print("AngleX= ");
+     Serial.println(AcX);
+
+     Serial.print("AngleY= ");
+     Serial.println(AcY);
+
+     Serial.print("AngleZ= ");
+     Serial.println(AcZ);
+     Serial.println("-----------------------------------------");
+ 
+  delay(5);
+bool gstate;
+if(AcX>1 || AcY>1)
+  {
+gstate = HIGH;
+digitalWrite(ledPin,!digitalRead(ledPin));
+delay(5);
+  }
+
+
+}
