@@ -1,0 +1,15 @@
+#include <avr/io.h>
+int main(void)
+{
+	DDRB |= (1 << DDB1);
+	// PB1 som output
+	OCR1A = 35;
+	// setter PWM 50% duty cycle
+	TCCR1A |= (1 << COM1A1);
+	TCCR1A |= (1 << WGM11) | (1 << WGM10);
+	TCCR1B |= (1 << CS11);
+	while (1)
+	{
+		
+	}
+}
