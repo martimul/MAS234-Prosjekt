@@ -41,6 +41,10 @@ static void hexDump(uint8_t dumpLen, uint8_t *bytePtr)
 
 void setup(void)
 {
+
+//--------------------------------------------------------------
+// WIRE SETUP FOR MPU
+
   Wire.begin();
   Wire.beginTransmission(MPU_addr);
   Wire.write(00000000);
@@ -51,6 +55,8 @@ void setup(void)
   Wire.write(0);
   Wire.endTransmission(true);
   pinMode(LED, OUTPUT);
+//--------------------------------------------------------------
+//CANBUS SETUP FRA FLEXCAN BIBLIOTEK
 
   delay(1000);
   Serial.println(F("Hello Teensy 3.6 dual CAN Test."));
@@ -103,14 +109,15 @@ void loop(void)
 
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------
-  
+//CANBUS KODE SOM TOGGLER LED PÆRE AV ELLER PÅ UT IFRA HVILKEN MSG DEN BLIR GITT
+
   while (Can0.available()) 
   {
         
     CAN_message_t inMsg;              
     Can0.read(inMsg);                 //Leser meldingen
     Serial.print("CAN0 output: "); 
-    hexDump(8, inMsg.buf);            //printer output Msg
+    hexDump(8, inMsg.buf);            
     Can0.write(inMsg);                //Skriver meldingen 
     
     if(inMsg.id == 0x21)              // 0x21 toggler led pæra på. <-- er hentet ut ifra oppgaven.
@@ -120,7 +127,7 @@ void loop(void)
     }
     else if(inMsg.id == 0x22)
     {
-      bool lastbit = inMsg.buf[7];    //Siden vi setter msg.leng (lengen) til 7
+      bool lastbit = inMsg.buf[7];    
       digitalWrite(LED, lastbit);     //Skriver til den siste bit og setter den til 0. Fordi 0x22 ut ifra oppgaven setter minst signifikante bit til av eller på.
     }
    }
